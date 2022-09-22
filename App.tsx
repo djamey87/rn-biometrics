@@ -20,7 +20,7 @@ import {
 } from 'react-native';
 
 import { Colors, Header } from 'react-native/Libraries/NewAppScreen';
-import { enableBiometrics, testBioFlow } from './android/src/utils/biometrics';
+import { enableBiometrics, testBioFlow } from './src/utils/biometrics';
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';

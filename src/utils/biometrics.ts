@@ -49,18 +49,23 @@ export const testBioFlow = async (
 
   console.log('testBioFlow | capable?', available);
   if (available) {
-    // Prompt user to scan biometrics
-    const { success } = await ReactNativeBiometrics.simplePrompt({
-      promptMessage: 'Confirm ID',
-    });
+    try {
+      // Prompt user to scan biometrics
+      const { success } = await ReactNativeBiometrics.simplePrompt({
+        promptMessage: 'Confirm ID',
+      });
+      console.log('testBioFlow | getting here?');
 
-    if (success) {
-      // If scan is successful, generate a keypair, then save the public key seperately in the key chain
-      const { publicKey } = await ReactNativeBiometrics.createKeys();
+      if (success) {
+        // If scan is successful, generate a keypair, then save the public key seperately in the key chain
+        const { publicKey } = await ReactNativeBiometrics.createKeys();
 
-      // post('/save_biometric_key', { key: publicKey, device_id: 'xyz' });
+        // post('/save_biometric_key', { key: publicKey, device_id: 'xyz' });
 
-      console.log('testBioFlow', publicKey);
+        console.log('testBioFlow', publicKey);
+      }
+    } catch (err) {
+      console.log('testBioFlow | error', err);
     }
   }
 };
