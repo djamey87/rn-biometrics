@@ -1,71 +1,67 @@
 import ReactNativeBiometrics from 'react-native-biometrics';
+import * as Keychain from 'react-native-keychain';
 
-export const enableBiometrics = async (
-  stringToStore: string,
-): Promise<string | undefined> => {
-  let biometricsSignature;
+interface BiometricsInput {
+  email: string;
+  password: string;
+}
 
+export const enableBiometrics = async ({
+  email,
+  password,
+}: BiometricsInput): Promise<boolean> => {
   const { available } = await ReactNativeBiometrics.isSensorAvailable();
   console.log('biometrics | capable?', available);
 
   if (available) {
-    const { keysExist } = await ReactNativeBiometrics.biometricKeysExist();
+    const { success } = await ReactNativeBiometrics.simplePrompt({
+      promptMessage: 'Confirm ID',
+    });
 
-    console.log('biometrics | available key?', keysExist);
-
-    if (!keysExist) {
-      try {
-        const { publicKey } = await ReactNativeBiometrics.createKeys();
-
-        console.log('biometrics | key created', publicKey);
-        const { success, error, signature } =
-          await ReactNativeBiometrics.createSignature({
-            promptMessage: 'Scan yo shiz!',
-            payload: publicKey,
-          });
-
-        if (!error && success) {
-          // we gats to do something with the signature
-          console.log('biometrics | signature created', signature);
-        }
-      } catch (err) {
-        console.log('somethings gone wrong', err);
-      }
-    } else {
-      // NOTE: shouldn't get here...
-      await ReactNativeBiometrics.deleteKeys();
-      console.warn('keys removed');
+    console.log('biometrics | confirmed?', success);
+    if (success) {
+      // TODO: if successful then store within keychain
+      await Keychain.setGenericPassword(email, password);
+      return true;
     }
   }
 
-  return biometricsSignature;
+  return false;
 };
 
-export const testBioFlow = async (
-  toEncode: string,
-): Promise<string | undefined> => {
-  // Check if biometrics are supported and configured on this device
-  const { available } = await ReactNativeBiometrics.isSensorAvailable();
+export const loginWitBiometrics = async (): Promise<boolean> => {
+  try {
+    // Check if details exist in keychain first
+    const credentials = await Keychain.getGenericPassword();
+    if (credentials) {
+      console.log(
+        'Credentials successfully loaded for user ' + credentials.username,
+      );
 
-  console.log('testBioFlow | capable?', available);
-  if (available) {
-    try {
-      // Prompt user to scan biometrics
       const { success } = await ReactNativeBiometrics.simplePrompt({
         promptMessage: 'Confirm ID',
       });
-      console.log('testBioFlow | getting here?');
 
       if (success) {
-        // If scan is successful, generate a keypair, then save the public key seperately in the key chain
-        const { publicKey } = await ReactNativeBiometrics.createKeys();
-
-        // post('/save_biometric_key', { key: publicKey, device_id: 'xyz' });
-
-        console.log('testBioFlow', publicKey);
+        // Retrieve the credentials
+        return true;
       }
-    } catch (err) {
-      console.log('testBioFlow | error', err);
+    } else {
+      console.log('No credentials stored');
     }
+  } catch (error) {
+    console.log("Keychain couldn't be accessed!", error);
+  }
+  return false;
+};
+
+export const logout = async (): Promise<boolean> => {
+  try {
+    await Keychain.resetGenericPassword();
+
+    return true;
+  } catch (err) {
+    console.log('ERROR: Could not reset keychain password', err);
+    return false;
   }
 };

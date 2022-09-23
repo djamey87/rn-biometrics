@@ -8,7 +8,7 @@
  * @format
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Button,
   SafeAreaView,
@@ -20,24 +20,45 @@ import {
 } from 'react-native';
 
 import { Colors, Header } from 'react-native/Libraries/NewAppScreen';
-import { enableBiometrics, testBioFlow } from './src/utils/biometrics';
+import {
+  enableBiometrics,
+  loginWitBiometrics,
+  logout,
+} from './src/utils/biometrics';
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
 
-  const authHandler = (): void => {
+  console.log('isLoggedIn', isLoggedIn);
+
+  const authHandler = async () => {
     console.log('start the biometrics process');
 
-    // enableBiometrics('some token for apis');
-    testBioFlow('some token for apis');
+    const isEnabled = await enableBiometrics({
+      email: 'david',
+      password: '123Test!',
+    });
+
+    setIsLoggedIn(isEnabled);
   };
 
-  const loginHandler = (): void => {
+  const loginHandler = async () => {
     console.log('login please!');
+
+    const loggedIn = await loginWitBiometrics();
+    setIsLoggedIn(loggedIn);
+  };
+
+  const logoutHandler = async () => {
+    console.log('logging out');
+
+    const loggedOut = await logout();
+    setIsLoggedIn(!loggedOut);
   };
 
   return (
@@ -54,13 +75,26 @@ const App = () => {
           style={{
             backgroundColor: isDarkMode ? Colors.black : Colors.white,
           }}>
-          <View>
-            <Button onPress={authHandler} title="Start Biometrics" />
-          </View>
+          {!isLoggedIn ? (
+            <>
+              <View>
+                <Button
+                  onPress={authHandler}
+                  title="Authenticate Biometric login"
+                />
+              </View>
 
-          <View style={styles.buttonWrapper}>
-            <Button onPress={loginHandler} title="Login" />
-          </View>
+              <View style={styles.buttonWrapper}>
+                <Button onPress={loginHandler} title="Login" />
+              </View>
+            </>
+          ) : null}
+
+          {isLoggedIn ? (
+            <View style={styles.buttonWrapper}>
+              <Button onPress={logoutHandler} title="Logout" />
+            </View>
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
